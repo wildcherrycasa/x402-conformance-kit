@@ -1,0 +1,12 @@
+{
+  "name": "x402-conformance-kit",
+  "version": "0.1.0",
+  "description": "An independent, dependency-free conformance harness for the x402 v2 HTTP payment protocol — with the exactly-once tests the reference SDKs were missing.",
+  "license": "Apache-2.0",
+  "type": "commonjs",
+  "engines": { "node": ">=20" },
+  "bin": { "x402-conformance": "./run.js" },
+  "scripts": { "conformance": "node run.js" },
+  "keywords": ["x402", "agent-payments", "conformance", "exactly-once", "ai-agents", "402", "micropayments"],
+  "files": ["x402-reference-client.js", "run.js", "README.md", "LICENSE"]
+}
