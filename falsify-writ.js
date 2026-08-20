@@ -124,6 +124,32 @@ async function join(overrides) {
     else BROKEN('an off-category spend was ' + cat.decision + ' (' + (cat.reason || '') + ')');
   }
 
+  // ── V · x402 EXACTLY-ONCE: the live x402 loop must settle a retried payment once ─────────────────
+  // The property the reference x402 SDKs got wrong (arXiv 2605.30998). If Writ hosts a live x402
+  // resource, pay it twice with the SAME nonce and confirm the budget drops once.
+  console.log('  V. x402 EXACTLY-ONCE (live endpoint)');
+  { const bz = await J(await get('/x402/bazaar'));
+    if (!bz.resources || !bz.resources.length) SKIP('no live x402 resource advertised on this deployment');
+    else {
+      const item = bz.resources[0];
+      const nonce = 'x402_' + crypto.randomBytes(12).toString('hex');
+      const mkHeader = (n) => Buffer.from(JSON.stringify({ x402Version: 2, scheme: 'exact', network: item.network,
+        payload: { authorization: { scheme: 'exact', network: item.network, asset: item.asset, payTo: item.payTo,
+          from: sandbox.agent_id, value: String(Math.round(item.price * 1e6)), nonce: n,
+          validBefore: Date.now() + 300000, resource: item.resource, agentId: sandbox.agent_id, category: item.category } } })).toString('base64');
+      const before = (await J(await get('/api/agents/' + sandbox.agent_id, H))).remaining;
+      const pay1 = await J(await get(item.resource, Object.assign({ 'X-PAYMENT': mkHeader(nonce) }, H)));
+      const pay2 = await J(await get(item.resource, Object.assign({ 'X-PAYMENT': mkHeader(nonce) }, H)));   // SAME nonce
+      const after = (await J(await get('/api/agents/' + sandbox.agent_id, H))).remaining;
+      const dropped = before - after;
+      if (pay1.delivered && Math.abs(dropped - item.price) < 1e-9)
+        HELD('paid an x402 resource, then retried the SAME nonce → charged once ($' + dropped + '), resource delivered — exactly-once holds on the live x402 loop');
+      else if (Math.abs(dropped - 2 * item.price) < 1e-9)
+        BROKEN('a retried x402 payment with the same nonce charged TWICE ($' + dropped + ')');
+      else SKIP('x402 resource did not deliver as expected (dropped $' + dropped + ') — cannot assess exactly-once here');
+    }
+  }
+
   console.log('\n\x1b[1m' + (broken ? '\x1b[31mWRIT WAS FALSIFIED' : '\x1b[32mWRIT HELD') + '\x1b[0m — '
     + held + ' invariants held, ' + broken + ' broken, ' + skipped + ' not exercisable here');
   if (!broken) console.log('\x1b[2mNo invariant broke. If you disagree, the sandbox is free and public — try harder, then open an issue.\x1b[0m');
