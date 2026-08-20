@@ -1,34 +1,40 @@
 {
   "name": "x402-conformance-kit",
   "version": "0.2.0",
-  "description": "An independent, dependency-free conformance harness for the x402 v2 HTTP payment protocol \u2014 with the exactly-once tests the reference SDKs were missing.",
+  "description": "An independent, dependency-free conformance harness for the x402 v2 HTTP payment protocol — with the exactly-once tests the reference SDKs were missing.",
   "license": "Apache-2.0",
   "type": "commonjs",
   "engines": {
     "node": ">=20"
   },
   "bin": {
-    "x402-conformance": "./run.js"
+    "x402-conformance": "./run.js",
+    "falsify-writ": "./falsify-writ.js"
   },
   "scripts": {
     "conformance": "node run.js",
-    "fixture:ttl": "node fixtures/ttl-cache-endpoint.js 8877 2"
+    "fixture:ttl": "node fixtures/ttl-cache-endpoint.js 8877 2",
+    "falsify": "node falsify-writ.js"
   },
   "keywords": [
-    "x402",
+    "402",
     "agent-payments",
+    "ai-agents",
+    "bug-bounty",
     "conformance",
     "exactly-once",
-    "ai-agents",
-    "402",
-    "micropayments"
+    "exactly-once-challenge",
+    "micropayments",
+    "tamper-evidence",
+    "x402"
   ],
   "files": [
-    "x402-reference-client.js",
-    "run.js",
-    "exactly-once.js",
-    "fixtures",
+    "LICENSE",
     "README.md",
-    "LICENSE"
+    "exactly-once.js",
+    "falsify-writ.js",
+    "fixtures",
+    "run.js",
+    "x402-reference-client.js"
   ]
 }

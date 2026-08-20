@@ -22,6 +22,31 @@ npx x402-conformance https://your-endpoint.example/premium --agent my-agent --se
   x402-conformance: 16 passed, 0 failed
 ```
 
+## Bonus: `falsify-writ` — a standing challenge
+
+The same harness philosophy, pointed at a live implementation that *claims* the properties. Writ
+([writ.money](https://writ.money)) publishes four money-safety invariants; this script attacks them
+against the public sandbox any agent can self-provision — no signup, no key, nothing to install:
+
+```bash
+npx --package=x402-conformance-kit falsify-writ https://writ.money
+```
+
+```
+  I. NO DOUBLE-SPEND
+  ✓ HELD    8 concurrent identical payments → 1 settlement (retry never double-charges)
+  II. NO AUTHORITY WIDENING
+  ✓ HELD    a forged delegation chain, WITHIN cap, → DENIED — no money moved
+  III. NO SILENT LEDGER EDIT
+  ✓ HELD    the ledger head is published — record it and hold us to it
+  IV. FAIL-CLOSED POLICY
+  ✓ HELD    over-cap and off-category spends → DENIED
+```
+
+If any line prints **★ BROKEN**, the script exits non-zero and you have found something worth an
+issue. Point it at *your* endpoint too — the invariants are not Writ-specific, and an implementation
+that cannot survive its own bounty harness should not be holding anyone's money.
+
 ## Why this exists
 
 Published work on the x402 ecosystem ([arXiv 2605.30998](https://arxiv.org/abs/2605.30998), May 2026) documented a **duplicate-settlement race in the reference SDKs and a production deployment** — an agent that retries on timeout could be charged twice. Neither x402 nor AP2 specifies exactly-once semantics; that obligation falls to each implementation, and implementations have gotten it wrong.
