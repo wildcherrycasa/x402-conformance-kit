@@ -1,4 +1,4 @@
-// ═══ x402 v2 REFERENCE CLIENT — written FROM the x402-foundation/x402 spec, ZERO FastPay imports ══════
+// ═══ x402 v2 REFERENCE CLIENT — written FROM the x402-foundation/x402 spec, ZERO framework imports ══════
 // Sources: specs/x402-specification-v2.md + specs/transports-v2/http.md + specs/extensions/payment_identifier.md.
 // Uses ONLY `crypto` + global `fetch`. This client proves x402 v2 HTTP TRANSPORT + CORE-SCHEMA conformance:
 //   • transport: 402 status · PAYMENT-REQUIRED / PAYMENT-SIGNATURE / PAYMENT-RESPONSE headers · base64 JSON
@@ -8,16 +8,16 @@
 //   • payment-identifier extension: client-generated id, REUSED on retries (16-128 chars, pay_ prefix)
 //
 // ⚠️ SCHEME BOUNDARY (honest): `payload` is scheme-specific. The real x402 SVM `exact` scheme requires a
-// base64 PARTIALLY-SIGNED VERSIONED SOLANA TRANSACTION — this client instead plugs FastPay's documented
+// base64 PARTIALLY-SIGNED VERSIONED SOLANA TRANSACTION — this client instead plugs a documented
 // HMAC-authorization stand-in (schemePayload below). Therefore this client proves TRANSPORT + CORE-SCHEMA
-// conformance, NOT SVM scheme conformance. See docs/x402-v2-compatibility-audit.md (evidence-rung correction).
+// conformance, NOT SVM scheme conformance.
 const crypto = require('crypto');
 
 const b64e = (o) => Buffer.from(JSON.stringify(o)).toString('base64');
 const b64d = (s) => { try { return JSON.parse(Buffer.from(String(s || ''), 'base64').toString('utf8')); } catch (_) { return null; } };
 
-// ── SCHEME PLUG (FastPay HMAC stand-in — the ONLY non-spec-derived part, clearly isolated) ─────────────
-// Field order + HMAC-SHA256 over a canonical JSON, per FastPay's published scheme doc (docs/api/x402-compatibility.md).
+// ── SCHEME PLUG (HMAC stand-in — the ONLY non-spec-derived part, clearly isolated) ─────────────
+// Field order + HMAC-SHA256 over a canonical JSON. Swap this whole function for a real signer.
 const AUTH_FIELDS = ['scheme', 'network', 'asset', 'payTo', 'from', 'value', 'nonce', 'validBefore', 'resource', 'agentId', 'category'];
 function schemePayload({ accepted, resourceUrl, agentId, secret, nonce, validForMs, mutate }) {
   const authorization = {
