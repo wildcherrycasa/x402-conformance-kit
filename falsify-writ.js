@@ -150,6 +150,27 @@ async function join(overrides) {
     }
   }
 
+  // ── VI · CONSENSUS HONESTY: the public attestation must match the published head or admit it doesn't ─
+  // A trust badge is only worth anything if it fails closed. If /api/consensus claims the head is attested
+  // AND settle-safe, that head MUST equal the one /api/anchor publishes. A badge that says "safe" on a head
+  // the server doesn't publish is the exact lie this checks for.
+  console.log('  VI. CONSENSUS HONESTY');
+  { const c = await J(await get('/api/consensus'));
+    if (!c || c.available === undefined) SKIP('/api/consensus not exposed on this deployment');
+    else if (c.available === false) HELD('no validator confirming right now → the panel says so (available:false), it does not fake finality');
+    else {
+      const a = await J(await get('/api/anchor'));
+      const anchorHash = a && a.head && a.head.hash;
+      if (c.settle_allowed === true && c.head && c.head.hash !== anchorHash)
+        BROKEN('/api/consensus advertised settle_allowed on head ' + (c.head.hash || '').slice(0, 12) + '… while /api/anchor publishes ' + String(anchorHash).slice(0, 12) + '…');
+      else if (c.head_matches_anchor === true && c.head && c.head.hash === anchorHash)
+        HELD('the attested head (seq ' + c.head.seq + ') EQUALS the published anchor, signed by an independent validator (' + ((c.validators && c.validators[0] && c.validators[0].fingerprint) || '?') + ')');
+      else HELD('consensus reports a divergence honestly (head_matches_anchor=' + c.head_matches_anchor + ', settle_allowed=' + c.settle_allowed + ') rather than claiming safe');
+      if (/PRIVATE KEY|BEGIN [A-Z ]*KEY/.test(JSON.stringify(c))) BROKEN('/api/consensus leaked key material in its response');
+      else HELD('/api/consensus exposes only fingerprints — no key material served');
+    }
+  }
+
   console.log('\n\x1b[1m' + (broken ? '\x1b[31mWRIT WAS FALSIFIED' : '\x1b[32mWRIT HELD') + '\x1b[0m — '
     + held + ' invariants held, ' + broken + ' broken, ' + skipped + ' not exercisable here');
   if (!broken) console.log('\x1b[2mNo invariant broke. If you disagree, the sandbox is free and public — try harder, then open an issue.\x1b[0m');
